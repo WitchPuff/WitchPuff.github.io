@@ -29,10 +29,10 @@ description: >-                        # used by seo meta and the atom feed
   A minimal, responsive, and powerful Jekyll theme for presenting professional writing.
 
 # fill in the protocol & hostname for your site, e.g., 'https://username.github.io'
-url: 'https://JohnnyassSilverhand.github.io'
+url: 'https://WitchPuff.github.io'
 
 github:
-  username: JohnnyassSilverhand             # change to your github username
+  username: WitchPuff             # change to your github username
 
 #twitter:
   #username: twitter_username            # change to your twitter username
@@ -82,27 +82,29 @@ theme_mode:   # [light|dark]
 # e.g. 'https://cdn.com'
 img_cdn: 
 
+plugins:
+  - jekyll-avatar
 # the avatar on sidebar, support local or CORS resources
-avatar:
+avatar: 
 
 # boolean type, the global switch for ToC in posts.
 toc: true
 
 comments:
-  active: utterances         # The global switch for posts comments, e.g., 'disqus'.  Keep it empty means disable
+  active: giscus         # The global switch for posts comments, e.g., 'disqus'.  Keep it empty means disable
   # The active options are as follows:
   disqus:
     shortname:    # fill with the Disqus shortname. › https://help.disqus.com/en/articles/1717111-what-s-a-shortname
   # utterances settings › https://utteranc.es/
   utterances:
-    repo: JohnnyassSilverhand/JohnnyassSilverhand.github.io         # <gh-username>/<repo>
+    repo: WitchPuff/WitchPuff.github.io         # <gh-username>/<repo>
     issue_term: url   # < url | pathname | title | ...>
   # Giscus options › https://giscus.app
   giscus:
-    repo:             # <gh-username>/<repo>
-    repo_id:
-    category:
-    category_id:
+    repo: WitchPuff/WitchPuff.github.io             # <gh-username>/<repo>
+    repo_id: R_kgDOHwS97Q
+    category: Announcements
+    category_id: DIC_kwDOHwS97c4CQnTG
     mapping:          # optional, default to 'pathname'
     input_position:   # optional, default to 'bottom'
     lang:             # optional, default to the value of `site.lang`
