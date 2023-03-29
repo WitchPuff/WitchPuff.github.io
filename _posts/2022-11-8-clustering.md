@@ -3,7 +3,8 @@ layout: post
 title:  "Machine Learning: Clustering"
 date:   2022-12-18 01:36:30
 categories: Courses
-tag: Machine Learning,AI,K-Means,GMM,Clustering
+tag: [Machine Learning] [AI] [K-Means] [GMM] [Clustering]
+math:true
 
 ---
 
