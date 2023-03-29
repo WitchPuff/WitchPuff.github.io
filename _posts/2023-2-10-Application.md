@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Computer Network: Applications"
+title:  "Computer Network: Application Layer"
 date:   2023-2-10 01:36:30
-categories: Computer Network
+categories: Courses
 tag: Computer Network
 
 ---
@@ -29,7 +29,7 @@ tag: Computer Network
 
 <img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202302140130863.png" alt="image-20220928160652649" style="zoom: 33%;" />
 
-## 
+
 
 # Applications
 
