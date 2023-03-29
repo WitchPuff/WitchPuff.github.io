@@ -3,7 +3,7 @@ layout: post
 title:  "Machine Learning: Classification"
 date:   2022-11-8 01:36:30
 categories: Courses
-tag: [Machine Learning] [AI] [CNN] [MLP]
+tag: ["Machine Learning","AI","CNN","MLP"]
 
 ---
 
