@@ -83,7 +83,6 @@ theme_mode:   # [light|dark]
 img_cdn: 
 
 plugins:
-  - jekyll-mathjax
   - jekyll-avatar
 # the avatar on sidebar, support local or CORS resources
 avatar: 
