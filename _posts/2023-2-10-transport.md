@@ -524,21 +524,3 @@ W:当前cwnd
 经高带宽路径的TCP：
 
 $一条连接的平均吞吐量=\frac{1.22MSS}{RTT \sqrt{L}}$
-
-
-
-pedagogic adj. 教师的（等于 pedagogical）；教育学的；教授法的
-
-vacuous/empty/meaningless adj. 空的；空虚的；空洞的；无意义的
-
-traverse 
-
-- . 横穿，穿过；横越岩石面的攀爬；（滑雪时）横线下（坡）；整体考虑（问题），全面讨论；来回移动，斜向移动；转动（大炮等带轴设备）；否认（一项指控），反驳
-- n. （爬陡坡时的）斜向攀上（下）；越过，穿过；滑雪横切运动；（逆风时轮船所作的）曲线航行，折航；横断物，横档；通廊，楼厢；（大炮等的）横转装置；机器部件的横转，横向运动；（测量用的）导线；（军）（壕沟的）土护墙，屏障
-- adj. 横贯的
-
-oblivious-obvious
-
-it suffices to know
-
-eavesdropping attacks 窃听攻击
