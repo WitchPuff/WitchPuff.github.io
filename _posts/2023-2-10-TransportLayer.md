@@ -1,10 +1,10 @@
 ---
 layout: post
 title:  "Computer Network: Transport Layer"
-date:   2023-2-10 01:36:30
+date:   2023-2-10 01:40:30
 categories: Courses
-tag: Computer Network
-
+tag: [Computer Network]
+math:true
 ---
 
 * TOC
