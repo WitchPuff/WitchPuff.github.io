@@ -13,6 +13,48 @@ math: true
 
 # Transport Layer
 
+### Transport-Layer Services
+
+相比运行在hosts（IP地址）之间的网络层协议，传输层协议运行在不同hosts的processes之间，实现logical communication，且其部署在end systems中而非routers中。网络层协议有UDP与TCP，两者都提供多路复用/解复用与错误检测的服务，但TCP还提供可靠数据传输、流控制、拥塞控制的服务。
+
+#### Multiplexing & Demultiplexing
+
+在多主机、多应用、多进程、多socket上，不同应用间的通信是通过segment在socket中传输实现的，多路复用/解复用就用于定位一个segment的目的socket与源socket是什么，解复用是发送至socket，多路复用是从socket接收并发至网络层，这通过两者实现：1）唯一标识符socket，2）segment中指定源与目的socket **port number**。UDP socket只关注目的地，而TCP socket由于面向连接，会建立源-目的地的一对一连接。
+
+#### UDP
+
+UDP header中有源端口号、目的端口号（用于多路复用/解复用），length与checksum（提供data integrity服务，将16bit data相加后取反，进位时最低位+1，接收时data+checksum全为1则说明无误）。使用UDP的应用有：DNS（实时性、无需连接、减小内存占用、UDP header字节更少更轻量），SNMP，NFS。
+
+#### RDT
+
+1. rdt1.0：假设信道完全可靠，接收方无需任何feedback。
+2. rdt2.x：假设信道存在bit error，即packet可能受损但不丢包。
+   1. rdt2.0：接收方采用ACK, NAK, ARQ，接收方确认收到传送ACK，出错传送NAK，发送方收到NAK则重传。
+   2. rdt2.1：假设ACK/NAK packet也可能受损，发送方只要收到受损的feedback packet就重传，为排除冗余packet，为数据packet添加单bit序号字段1/0，接收方使用ACK, NAK 1/0。
+   3. rdt2.2：接收方移除NAK，采用ACK 1/0。
+3. rdt3.0：假设信道存在bit error且lossy，即packet可能受损或可能丢包，发送方发送每个packet时启动**定时器**，超时则重传，接收方使用ACK 1/0。
+4. pipelined：rdt协议的缺陷是由于其核心为**停等协议**，每次传输都至少要等待一个RTT，因此采用流水线设计，不需要等待前序packet被确认收到。
+   1. Go Back N：序号范围扩大，双方都需要维持缓冲区。发送方维护**一个全局计时器**和一个窗口(base,nextseqnum)，base为最小未确认packet的序号，每次更新base时重启计时器，**超时重传当前窗口所有未确认的分组**。接收方采用**累计确认**ACK k，不符合当前需求序号k的packet一律丢弃，即接收方保证正确、正序确认packet。
+   2. Selective Repeat：双方都维持缓冲区和窗口，且由于feedback的延迟或丢包，窗口不同步。发送方**为每个分组维持一个定时器**，超时重传。接收方只要确认收到当前窗口和上一窗口范围内的分组，就发送ACK k（即使冗余），防止由于ACK丢失，发送方一直重传。
+
+#### TCP
+
+TCP的特征为面向连接（体现在3次握手）、全双工、点对点（多重广播）、双向传输。
+
+TCP的连接管理：
+
+1. 3次握手：client开辟连接，发送SYN segment（SYN=1)，server发送SYNACK segment（单独ACK不包含任何数据，不是捎带确认，该确认segment中会给予该SYN segment一个cookie，此时不开辟连接，防止SYN flood attack），client发送ACK segment，可能包含请求数据，收到后server开辟连接。
+2. 关闭连接：client发送FIN segment（FIN=1）请求关闭，server发送ACK确认后一段时间再发送FIN segment，client确认后，两端真正关闭连接。
+
+TCP提供RDT、流控制、拥塞控制服务。
+
+1. RDT：发送方维持一个定时器，超时重传，并累计确认，收到冗余ACK就快速重传，无需等到超时。
+2. 流控制：在header中维持一个receive window（用最后读取、最后接收、最后发送、最后确认与buffer size来表示）。
+3. 拥塞控制：
+   1. 通过cwnd控制速度；
+   2. 丢包（超时/冗余ACK x3）视为拥堵，收到一个ACK则增大cwnd，pushy strategy；
+   3. 拥塞控制算法：初始cwnd=MSS，慢启动（cwnd+=MSS，指数增长）、拥塞避免（cwnd+=MSS\*MSS/cwnd，线性增长）、快速恢复（cwnd+=MSS，指数增长），只要丢包（timeout/duplicate ACK）ssthresh=cwnd/2（乘性减半）且重传，超时则重启慢启动，冗余ACK则cwnd=ssthresh+3MSS，进入快速恢复，直到首次收到新的ACK，视为拥塞结束，进入拥塞避免。
+
 ## 1. Transport-Layer Services
 
 Conclusion：相比运行在hosts（IP地址）之间的网络层协议，传输层协议运行在不同hosts的processes之间，实现logical communication，且其部署在end systems中而非routers中。网络层协议有UDP与TCP，两者都提供多路复用/解复用与错误检测的服务，但TCP还提供可靠数据传输、流控制、拥塞控制的服务。
