@@ -15,7 +15,7 @@ math: true
 
 ## 1. Transport-Layer Services
 
-*Conclusion：相比运行在hosts（IP地址）之间的网络层协议，传输层协议运行在不同hosts的processes之间，实现logical communication，且其部署在end systems中而非routers中。网络层协议有UDP与TCP，两者都提供多路复用/解复用与错误检测的服务，但TCP还提供可靠数据传输、流控制、拥塞控制的服务。*
+Conclusion：相比运行在hosts（IP地址）之间的网络层协议，传输层协议运行在不同hosts的processes之间，实现logical communication，且其部署在end systems中而非routers中。网络层协议有UDP与TCP，两者都提供多路复用/解复用与错误检测的服务，但TCP还提供可靠数据传输、流控制、拥塞控制的服务。
 
 服务：传输层协议提供了运行在不同hosts上运行的**processes**实现逻辑通信logical communication（指他们在逻辑上直接连接，但实际上可能经过了无数routers）。相对的，一个网络层协议在**hosts**之间实现逻辑通信。传输层协议能提供的服务被底层的网络层协议所限制。
 
@@ -57,7 +57,7 @@ services:
 
 ## 2. Multiplexing & Demultiplexing
 
-*Conclusion：在多主机、多应用、多进程、多socket上，不同应用间的通信是通过segment在socket中传输实现的，多路复用/解复用就用于定位一个segment的目的socket与源socket是什么，解复用是发送至socket，多路复用是从socket接收并发至网络层，这通过两者实现：1）唯一标识符socket，2）segment中指定源与目的socket **port number**。UDP socket只关注目的地，而TCP socket由于面向连接，会建立源-目的地的一对一连接。*
+Conclusion：在多主机、多应用、多进程、多socket上，不同应用间的通信是通过segment在socket中传输实现的，多路复用/解复用就用于定位一个segment的目的socket与源socket是什么，解复用是发送至socket，多路复用是从socket接收并发至网络层，这通过两者实现：1）唯一标识符socket，2）segment中指定源与目的socket **port number**。UDP socket只关注目的地，而TCP socket由于面向连接，会建立源-目的地的一对一连接。
 
 已知：多主机，多应用，一个应用对应多进程，一个进程对应多socket（多线程），segment要通过socket传输。
 
@@ -110,7 +110,7 @@ TCP关注source & destination，完全双向一对一连接。
 
 ## 3. UDP(User Datagram Protocol)
 
-*Conclusion：UDP header中有源端口号、目的端口号（用于多路复用/解复用），length与checksum（提供data integrity服务，将16bit data相加后取反，进位时最低位+1，接收时data+checksum全为1则说明无误）。使用UDP的应用有：DNS（实时性、无需连接、减小内存占用、UDP header字节更少更轻量），SNMP，NFS。*
+Conclusion：UDP header中有源端口号、目的端口号（用于多路复用/解复用），length与checksum（提供data integrity服务，将16bit data相加后取反，进位时最低位+1，接收时data+checksum全为1则说明无误）。使用UDP的应用有：DNS（实时性、无需连接、减小内存占用、UDP header字节更少更轻量），SNMP，NFS。
 
 UDP从应用程序进程中获取消息，为多路复用/解复用服务附加源端口号和目的端口号字段，添加另外两个小字段，并将结果段传递给网络层。
 
@@ -322,21 +322,21 @@ shortage：
 
 ## 5. TCP(Transmission Control Protocol)
 
-*Conclusion：TCP的特征为面向连接（体现在3次握手）、全双工、点对点（多重广播）、双向传输。*
+Conclusion：TCP的特征为面向连接（体现在3次握手）、全双工、点对点（多重广播）、双向传输。
 
-*TCP的连接管理：*
+TCP的连接管理：
 
-1. *3次握手：client开辟连接，发送SYN segment（SYN=1)，server发送SYNACK segment（单独ACK不包含任何数据，不是捎带确认，该确认segment中会给予该SYN segment一个cookie，此时不开辟连接，防止SYN flood attack），client发送ACK segment，可能包含请求数据，收到后server开辟连接。*
+1. 3次握手：client开辟连接，发送SYN segment（SYN=1)，server发送SYNACK segment（单独ACK不包含任何数据，不是捎带确认，该确认segment中会给予该SYN segment一个cookie，此时不开辟连接，防止SYN flood attack），client发送ACK segment，可能包含请求数据，收到后server开辟连接。
 2. 关闭连接：client发送FIN segment（FIN=1）请求关闭，server发送ACK确认后一段时间再发送FIN segment，client确认后，两端真正关闭连接。
 
-*TCP提供RDT、流控制、拥塞控制服务。*
+TCP提供RDT、流控制、拥塞控制服务。
 
-1. *RDT：发送方维持一个定时器，超时重传，并累计确认，收到冗余ACK就快速重传，无需等到超时。*
-2. *流控制：在header中维持一个receive window（用最后读取、最后接收、最后发送、最后确认与buffer size来表示）。*
-3. *拥塞控制：*
-   1. *通过cwnd控制速度；*
-   2. *丢包（超时/冗余ACK x3）视为拥堵，收到一个ACK则增大cwnd，pushy strategy；*
-   3. *拥塞控制算法：初始cwnd=MSS，慢启动（cwnd+=MSS，指数增长）、拥塞避免（cwnd+=MSS\*MSS/cwnd，线性增长）、快速恢复（cwnd+=MSS，指数增长），只要丢包（timeout/duplicate ACK）ssthresh=cwnd/2且重传，超时则重启慢启动，冗余ACK则cwnd=ssthresh+3MSS，进入快速恢复，直到首次收到新的ACK，视为拥塞结束，进入拥塞避免。*
+1. RDT：发送方维持一个定时器，超时重传，并累计确认，收到冗余ACK就快速重传，无需等到超时。
+2. 流控制：在header中维持一个receive window（用最后读取、最后接收、最后发送、最后确认与buffer size来表示）。
+3. 拥塞控制：
+   1. 通过cwnd控制速度；
+   2. 丢包（超时/冗余ACK x3）视为拥堵，收到一个ACK则增大cwnd，pushy strategy；
+   3. 拥塞控制算法：初始cwnd=MSS，慢启动（cwnd+=MSS，指数增长）、拥塞避免（cwnd+=MSS\*MSS/cwnd，线性增长）、快速恢复（cwnd+=MSS，指数增长），只要丢包（timeout/duplicate ACK）ssthresh=cwnd/2且重传，超时则重启慢启动，冗余ACK则cwnd=ssthresh+3MSS，进入快速恢复，直到首次收到新的ACK，视为拥塞结束，进入拥塞避免。
 
 ### 5.1 Definition
 
@@ -347,7 +347,7 @@ shortage：
    1. point-to-point, multicasting
    2. bidirectional
 
-#### MSS/MTU/TCP segment size
+#### MSS, MTU, TCP segment size
 
 MSS（Maximum Segment Size）是指TCP协议中一个数据段（segment）能够承载的最大数据量（不包括TCP header，只是应用层所需data field），它是TCP连接双方在握手过程中协商得出的结果。
 
