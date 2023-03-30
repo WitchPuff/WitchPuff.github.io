@@ -320,4 +320,208 @@ shortage：
 
 <img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202302170206217.png" alt="image-20230217020600115" style="zoom:67%;" />
 
-## 
+## 5. TCP(Transmission Control Protocol)
+
+Conclusion：TCP的特征为面向连接（体现在3次握手）、全双工、点对点（多重广播）、双向传输。
+
+TCP的连接管理：
+
+1. 3次握手：client开辟连接，发送SYN segment（SYN=1)，server发送SYNACK segment（单独ACK不包含任何数据，不是捎带确认，该确认segment中会给予该SYN segment一个cookie，此时不开辟连接，防止SYN flood attack），client发送ACK segment，可能包含请求数据，收到后server开辟连接。
+2. 关闭连接：client发送FIN segment（FIN=1）请求关闭，server发送ACK确认后一段时间再发送FIN segment，client确认后，两端真正关闭连接。
+
+TCP提供RDT、流控制、拥塞控制服务。
+
+1. RDT：发送方维持一个定时器，超时重传，并累计确认，收到冗余ACK就快速重传，无需等到超时。
+2. 流控制：在header中维持一个receive window（用最后读取、最后接收、最后发送、最后确认与buffer size来表示）。
+3. 拥塞控制：
+   1. 通过cwnd控制速度；
+   2. 丢包（超时/冗余ACK x3）视为拥堵，收到一个ACK则增大cwnd，pushy strategy；
+   3. 拥塞控制算法：初始cwnd=MSS，慢启动（cwnd+=MSS，指数增长）、拥塞避免（cwnd+=MSS\*MSS/cwnd，线性增长）、快速恢复（cwnd+=MSS，指数增长），只要丢包（timeout/duplicate ACK）ssthresh=cwnd/2且重传，超时则重启慢启动，冗余ACK则cwnd=ssthresh+3MSS，进入快速恢复，直到首次收到新的ACK，视为拥塞结束，进入拥塞避免。
+
+### 5.1 Definition
+
+#### Features
+
+1. connection-oriented: 3-way handshake
+2. full-duplex service
+   1. point-to-point, multicasting
+   2. bidirectional
+
+#### MSS, MTU, TCP segment size
+
+MSS（Maximum Segment Size）是指TCP协议中一个数据段（segment）能够承载的最大数据量（不包括TCP header，只是应用层所需data field），它是TCP连接双方在握手过程中协商得出的结果。
+
+MTU（Maximum Transmission Unit）是指数据链路层协议中一个数据帧（frame）能够承载的最大数据量。
+
+TCP segment size指的是一个TCP数据段的大小，它包括TCP首部和数据部分。发送方根据MTU的大小来调整MSS的大小，以确保发送的TCP数据段可以被正确地传输和接收。
+
+#### TCP segment structure
+
+<img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202303301519239.png" alt="image-20230217161031376" style="zoom: 50%;" />
+
+TCP将数据看作无组织但有序的字节流，为每个字节编号与累计确认来实现有序确认。
+
+<img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202303301519633.png" alt="image-20230217162607207" style="zoom:50%;" />
+
+Sequence number: 为file data的**每个字节**编号，[0,MSS]为segment 1，[MSS,2MSS]为segment 2，以此类推。但一般会随机初始化序号，否则容易造成冲突。
+
+acknowledgement number：TCP可能收到乱序的segment，此时会将其缓存等待重排。TCP接收方会在acknowlegment number field填入其需求的最小的字节编号，比如已收到[0,55],[100,155]，其发送给发送方的segment中acknowlegment number为56。TCP采用累计确认机制（cumulative acknowledgements），每次只确认最小的缺失字节编号。
+
+捎带确认：**接收端**发送数据时顺带地返回一个确认（ACK）信息，而不需要独立地发送一个ACK消息。发送端只能独立发送ACK消息。减少网络上的通信次数，提高网络效率。
+
+以下情况接收端必须独立发送ACK：
+
+1. 接收端接收到SYN segment时，需要独立发送SYNACK作为第二次握手的响应。
+2. 接收端接收到一个受损segment时。捎带确认只能确认已经正确接收的数据。
+
+
+
+<img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202302172126972.png" alt="image-20230217212603886" style="zoom: 67%;" />
+
+Telnet：用于远程登陆的应用层协议
+
+### 5.2 RTT Estimation and Timeout
+
+$EstimatedRTT=(1-\alpha) \cdot EstimatedRTT +\alpha \cdot SampleRTT $
+
+TCP通过一定策略计算SampleRTT（不会采样每个segment），并计算其指数加权移动平均(EWMA)，估计出EstimatedRTT。
+
+$DevRTT=(1-\beta)\cdot DevRTT+\beta \cdot |SampleRTT-EstimatedRTT|$
+
+DevRTT是预测值与测量值差值的EWMA。
+
+$TimeoutInterval=EstimatedRTT+4\cdot DevRTT$
+
+出现超时后，TimeoutInterval应当加倍，以免即将被确认的后继报文段过早出现超时。但只要收到报文段并更新EstimatedRTT，就再次计算TimeoutInterval。
+
+### 5.3 RDT service in TCP
+
+assumption：发送方不受TCP流控制、拥塞控制的限制；数据长度小于MSS（不需要切割），且单向数据传送。
+
+TCP在发送方部署一个single timer，发送方响应以下事件：
+
+1. call from above，从上层接受数据，若定时器未运行，启动定时器；
+2. Timeout，重传最小序号的未应答segment，启动定时器；
+3. receiver feedback，收到ACK k，TCP采用累计确认，这可以说明k以前的字节都已经收到，故更新base。若当前仍然存在未应答segment，启动定时器。
+
+#### 快速重传
+
+duplicate ACK：假设接收方当前需求为segment y，接收方只要收到的segment k(k>y)，就发送冗余ACK y，发送方只要收到3次ACK y，就快速重传y。此外，由于TCP采用累计确认，只要收到ACK k(k>y)，就会在超时前重启计时器，无需重传segment y。
+
+TCP不是GBN协议（不会重传一整个窗口），也不完全是SR协议（TCP可以有选择地确认失序报文段），可以被分类为其混合体。
+
+### 5.4 FLow Control
+
+用receive window来实现Flow Control。
+
+1. receiver：
+   1. LastByteRead:应用从缓存中读取的最后一个字节编号
+   2. LastByteRcvd: 最后一个放入缓存的字节编号
+   3. RcvBuffer: total buffer size
+   4. rwnd: receive window=RcvBuffer-[LastByteRcvd-LastByteRead]
+2. sender：
+   1. LastByteSent
+   2. LastByteAcked
+
+$LastByteSent-LastByteAcked≤ rwnd$
+
+<img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202303301519070.png" alt="image-20230218154756388" style="zoom:50%;" />
+
+当rwnd为0时，sender会一直继续发送单字节数据segment，这些segment会被receiver确认，直到确认segment中包含一个非0的rwnd。
+
+### 5.5 Connection Management
+
+#### 3-way handshake
+
+1. client TCP发送SYN segment，SYN=1，序号client_isn随机初始化
+2. server为该连接分配TCP缓存和变量，向client TCP发送SYNACK segment，SYN=1，ACK=client_isn+1，包含初始化的server_isn
+3. client为该连接分配缓存和变量，向server发送segment，SYN=0，ACK=server_isn+1，该segment可以负载data
+
+<img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202303301519098.png" alt="image-20230218161543559" style="zoom:67%;" />
+
+#### close
+
+1. client发送close request，segment中FIN=1
+2. server发送ACK，再发送其终止segment，FIN=1
+3. client发送ACK，client TCP等待30s后终止，释放资源
+4. server收到ACK，server TCP终止，释放资源
+
+<img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202303301519988.png" alt="image-20230218161833457" style="zoom:67%;" />
+
+#### SYN flood attack - classic Dos attack
+
+向服务器发送多个SYN segment，server会在第二次握手为其开辟空间，导致服务器连接资源殆尽
+
+SYN cookie：收到连接请求时生成一个初始TCP序列号，与SYN segment的源地址有关，作为cookie，不开辟空间，发送含有该序列号的SYNACK segment；当client返回第三次握手的ACK segment，验证该ACK segment序号与SYNACK segment中的cookie值匹配，此时server才生成连接。
+
+### 5.6 Congestion Control
+
+根据【网络层是否为运输层拥塞控制提供了显式帮助】来分类：
+
+1. end-to-end，无关网络层，TCP采用这种方法
+2. 网络辅助的拥塞控制，routers向发送方提供显式反馈信息。
+   1. routers-sender：choke packet
+   2. receiver-sender：路由器标记packet中的某个field，收到flagged packet后，receiver通知sender，这种通知至少要经过一个RTT
+
+#### TCP Congestion Control
+
+TCP拥塞控制通过三个方面实现：
+
+1. TCP发送方能够限制发送流量的速率
+2. TCP发送方能够感知拥塞
+3. TCP发送方感知到拥塞时，如何应对
+
+##### 限制流量速率
+
+变量：
+
+1. LastByteSent
+2. LastByteAcked
+3. cwnd，congestion window
+
+$LastByteSend-LastAcked≤min\{cwnd,rwnd\}$
+
+v=cwnd/RTT，通过调整cwnd的值，可以调整连接发送数据的速率
+
+##### 感知拥塞
+
+丢包：timeout/3 duplicate ACK(4 ACK in total)，视作拥堵，减小cwnd
+
+ACK segment：TCP是self-clocking的，使用确认/计时来增大cwnd
+
+带宽检测：只要收到ACK，一直增加cwnd，直到出现丢包，减小该速率，然后再次开始探测（增大cwnd），总之就是不停试探边界
+
+##### 拥塞控制算法
+
+1. 慢启动slow-start（强制）
+   1. initial：cwnd≤MSS，v=MSS/RTT
+   2. 收到一个首次确认的ACK就翻倍，MSS*2^n^
+   3. 若出现拥塞，更新慢启动阈值ssthresh（slow-start thresh）=cwnd/2
+      1. 超时，cwnd重置为1MSS，**重新开始慢启动**
+      2. 3 冗余ACK，TCP快速重传，cwnd=ssthresh+3MSS，进入快速恢复
+   4. 当cwnd≥ssthresh，结束慢启动，进入拥塞避免
+2. 拥塞避免（强制）
+   1. 每个RTT，cwnd+=MSS，线性增加；例如，对每个到达的ACK，cwnd+=MSS*MSS/cwnd
+   2. 拥塞，ssthresh=0.5 cwnd
+      1. timeout，cwnd=1MSS
+      2. 三个冗余ACK，cwnd=ssthresh+3MSS，进入快速恢复
+3. 快速恢复（推荐）
+   1. 收到ACK，cwnd=ssthresh，切换拥塞避免
+   2. 拥塞
+      1. 超时，ssthresh=cwnd/2，cwnd=1 MSS，重启慢启动
+      2. 冗余ACK，cwnd+=MSS，快速恢复的主体
+
+AIMD(Additive-Increase, Multiplicative-Decrease, AIMD)，加性增、乘性减：TCP线性增加其cwnd，直到出现3个冗余ACK，cwnd减半，再开始线性增长，不断探测可用带宽
+
+<img src="https://raw.githubusercontent.com/WitchPuff/typora_images/main/img/202302181800410.png" alt="image-20230218180023238" style="zoom:67%;" />
+
+高度理想化的TCP稳态动态性模型：
+
+$一条连接的平均吞吐量=\frac{0.75W}{RTT}$
+
+W:当前cwnd
+
+经高带宽路径的TCP：
+
+$一条连接的平均吞吐量=\frac{1.22MSS}{RTT \sqrt{L}}$
+
